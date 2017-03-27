@@ -3,37 +3,32 @@ package com.jd.jdassignment;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
-import android.content.pm.PackageManager;
-import android.support.annotation.NonNull;
-import android.support.design.widget.Snackbar;
-import android.support.v4.app.LoaderManager;
-import android.support.v7.app.AppCompatActivity;
-import android.app.LoaderManager.LoaderCallbacks;
-
-import android.content.CursorLoader;
-import android.content.Loader;
+import android.content.Intent;
 import android.database.Cursor;
-import android.net.Uri;
-import android.os.AsyncTask;
-
 import android.os.Build;
 import android.os.Bundle;
-import android.provider.ContactsContract;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
+import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.inputmethod.EditorInfo;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.arpaul.utilitieslib.LogUtils;
+import com.jd.jdassignment.dataaccess.LSCPConstants;
+import com.jd.jdassignment.dataobject.UserDO;
 
-import static android.Manifest.permission.READ_CONTACTS;
+import static com.jd.jdassignment.common.AppConstants.ACTION_CHECK_LOGIN;
+import static com.jd.jdassignment.common.AppConstants.BUNDLE_DASHBOARD;
+import static com.jd.jdassignment.common.ApplicationInstance.LOADER_CHECK_LOGIN;
+import static com.jd.jdassignment.dataaccess.LSCPConstants.CONTENT_URI_USER;
 
 /**
  * A login screen that offers login via email/password.
@@ -46,6 +41,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderManager.Lo
     private Button btnLogin;
     private View pbLogin;
     private View mLoginFormView;
+    String TAG = "LoginActivity";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,10 +50,25 @@ public class LoginActivity extends AppCompatActivity implements LoaderManager.Lo
 
         initialiseControls();
 
+        bindControls();
+    }
+
+    void bindControls() {
+        edtUsername.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int id, KeyEvent keyEvent) {
+                if (id == EditorInfo.IME_ACTION_NEXT) {
+                    edtPassword.requestFocus();
+                    return true;
+                }
+                return false;
+            }
+        });
+
         edtPassword.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView textView, int id, KeyEvent keyEvent) {
-                if (id == R.id.login || id == EditorInfo.IME_NULL) {
+                if (id == EditorInfo.IME_ACTION_DONE) {
                     attemptLogin();
                     return true;
                 }
@@ -72,9 +83,13 @@ public class LoginActivity extends AppCompatActivity implements LoaderManager.Lo
             }
         });
 
-
+        tvRegister.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startActivity(new Intent(LoginActivity.this, RegistrationActivity.class));
+            }
+        });
     }
-
     /**
      * Attempts to sign in or register the account specified by the login form.
      * If there are form errors (invalid email, missing fields, etc.), the
@@ -114,6 +129,18 @@ public class LoginActivity extends AppCompatActivity implements LoaderManager.Lo
             // Show a progress spinner, and kick off a background task to
             // perform the user login attempt.
             showProgress(true);
+
+            UserDO objUserDO = new UserDO();
+            objUserDO.UserName = username;
+            objUserDO.Password = password;
+
+            Bundle bundle = new Bundle();
+            bundle.putSerializable(ACTION_CHECK_LOGIN, objUserDO);
+
+            if(getSupportLoaderManager().getLoader(LOADER_CHECK_LOGIN) == null)
+                getSupportLoaderManager().initLoader(LOADER_CHECK_LOGIN, bundle, this);
+            else
+                getSupportLoaderManager().restartLoader(LOADER_CHECK_LOGIN, bundle, this);
         }
     }
 
@@ -160,17 +187,54 @@ public class LoginActivity extends AppCompatActivity implements LoaderManager.Lo
     }
 
     @Override
-    public android.support.v4.content.Loader onCreateLoader(int id, Bundle args) {
-        return null;
+    public Loader onCreateLoader(int id, Bundle bundle) {
+        switch (id) {
+            case LOADER_CHECK_LOGIN:
+                UserDO objUserDO = (UserDO) bundle.getSerializable(ACTION_CHECK_LOGIN);
+                LogUtils.infoLog(TAG, objUserDO.UserName + " " + objUserDO.Password);
+                return new CursorLoader(this, CONTENT_URI_USER,
+                        null,
+                        UserDO.USERNAME + LSCPConstants.TABLE_QUES + LSCPConstants.TABLE_AND +
+                        UserDO.PASSWORD + LSCPConstants.TABLE_QUES,
+                        new String[]{objUserDO.UserName, objUserDO.Password},
+                        null);
+            default:
+                return null;
+        }
     }
 
     @Override
-    public void onLoadFinished(android.support.v4.content.Loader loader, Object data) {
+    public void onLoadFinished(Loader loader, Object data) {
+        switch (loader.getId()) {
+            case LOADER_CHECK_LOGIN:
+                if(data instanceof Cursor) {
+                    Cursor cursor = (Cursor) data;
+                    LogUtils.infoLog(TAG, "inside data");
+                    if(cursor != null && cursor.moveToFirst()) {
+                        LogUtils.infoLog(TAG, "inside cursor");
+                        UserDO objUserDO = new UserDO();
+                        objUserDO.UserId = cursor.getString(cursor.getColumnIndex(UserDO.USERID));
+                        objUserDO.Email = cursor.getString(cursor.getColumnIndex(UserDO.EMAIL));
+                        objUserDO.FirstName = cursor.getString(cursor.getColumnIndex(UserDO.FIRSTNAME));
+                        objUserDO.LastName = cursor.getString(cursor.getColumnIndex(UserDO.LASTNAME));
+                        objUserDO.Email = cursor.getString(cursor.getColumnIndex(UserDO.PASSWORD));
+                        objUserDO.Phone = cursor.getString(cursor.getColumnIndex(UserDO.PHONE));
+                        objUserDO.Dob = cursor.getString(cursor.getColumnIndex(UserDO.DOB));
 
+                        Intent intent = new Intent(LoginActivity.this, DashBoardActivity.class);
+                        intent.putExtra(BUNDLE_DASHBOARD, objUserDO);
+                        startActivity(intent);
+                    } else {
+                        showProgress(false);
+                    }
+                } else {
+                    showProgress(false);
+                }
+        }
     }
 
     @Override
-    public void onLoaderReset(android.support.v4.content.Loader loader) {
+    public void onLoaderReset(Loader loader) {
 
     }
 

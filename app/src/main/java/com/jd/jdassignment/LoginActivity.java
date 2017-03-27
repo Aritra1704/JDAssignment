@@ -22,6 +22,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.arpaul.utilitieslib.LogUtils;
+import com.jd.jdassignment.common.AppPreference;
 import com.jd.jdassignment.dataaccess.LSCPConstants;
 import com.jd.jdassignment.dataobject.UserDO;
 
@@ -220,6 +221,8 @@ public class LoginActivity extends AppCompatActivity implements LoaderManager.Lo
                         objUserDO.Email = cursor.getString(cursor.getColumnIndex(UserDO.PASSWORD));
                         objUserDO.Phone = cursor.getString(cursor.getColumnIndex(UserDO.PHONE));
                         objUserDO.Dob = cursor.getString(cursor.getColumnIndex(UserDO.DOB));
+
+                        new AppPreference(LoginActivity.this).saveStringInPreference(AppPreference.USERID, objUserDO.UserId);
 
                         Intent intent = new Intent(LoginActivity.this, DashBoardActivity.class);
                         intent.putExtra(BUNDLE_DASHBOARD, objUserDO);

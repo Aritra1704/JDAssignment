@@ -10,7 +10,6 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-        multiDexEnabled true
     }
     buildTypes {
         release {
@@ -30,5 +29,4 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile 'com.github.Aritra1704:UtilitiesJitPackLib:1.18'
     compile 'com.github.Aritra1704:CustomAlerts:1.04'
-    compile 'com.github.Aritra1704:LocationFinder:1.3'
 }

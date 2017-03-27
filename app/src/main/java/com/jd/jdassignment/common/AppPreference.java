@@ -10,16 +10,7 @@ import android.preference.PreferenceManager;
 public class AppPreference {
 
     public static final String USERID                  =	"USERID";
-    public static final String PROFILEID               =	"PROFILEID";
-    public static final String PROFILEIMAGE            =	"PROFILEIMAGE";
     public static final String USERNAME                =	"USERNAME";
-    public static final String PASSWORD 			   =	"PASSWORD";
-    public static final String USERTYPE 			   =	"USERTYPE";
-    public static final String GCM_TOKEN               =	"GCM_TOKEN";
-    public static final String IS_RATED 			   =	"IS_RATED";
-    public static final String USER_TOKEN 			   =	"USER_TOKEN";
-
-    public static final String ALL_DATA_FETCH 		   =	"ALL_DATA_FETCH";
 
     private SharedPreferences preferences;
     private SharedPreferences.Editor edit;
